@@ -1,0 +1,9 @@
+# Byte-compiled / Environments
+__pycache__/
+.env
+.venv
+env/
+venv/
+
+# History / Temporary files
+db_shelve.db
