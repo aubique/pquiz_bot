@@ -28,8 +28,6 @@ def webhook():
 def show_question(message:types.Message):
     cid = str(message.chat.id)
     quiz = core.load_json(config.JSON_QUIZ)
-    # Add a var to the storage in case if it's not initialized
-    #storage = core.shelve_callback(cid, core.update_history, str(0))
     # Pick a random number which isn't listed in the message history yet
     random_num = core.shelve_callback(cid, core.choose_question, quiz)
     # If we ran of the questions then there is no random number so we indicitate the end
@@ -45,19 +43,23 @@ def show_question(message:types.Message):
     markup = core.generate_markup(t)
     bot.send_message(int(cid), q, reply_markup=markup)
 
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=['add'])
 def update_history(message: types.Message):
-    pass
+    cid = str(message.chat.id)
+    core.shelve_callback(cid, core.finish_user_game)
+    bot.send_message(int(cid), 'Enter here your question')
+    core.shelve_callback(cid, core.set_game_editor)
 
 @bot.message_handler(func=lambda messsage: True, content_types=['text'])
 def get_reply(message: types.Message):
     cid = str(message.chat.id)
+    msg_text = message.text
     num, ca = core.shelve_callback(cid, core.get_correct)
     # Correct answer exists if game is started and initialized it early
     if ca:
         keyboard_hider = types.ReplyKeyboardRemove()
         # If text is right/wrong hide the keyboard and output a message
-        if message.text == ca:
+        if msg_text == ca:
             bot.reply_to(message, config.RIGHT, reply_markup=keyboard_hider)
             core.shelve_callback(cid, core.update_history, str(num))
         else:
@@ -65,7 +67,12 @@ def get_reply(message: types.Message):
         # Finish the game and delete the correct answer shelve
         core.shelve_callback(cid, core.finish_user_game)
     else:
-        bot.send_message(int(cid), 'Type /game to start the game')
+        s = core.shelve_callback(cid, core.recieve_question_data, msg_text)
+        if s:
+            bot.send_message(int(cid), core.get_question_mark(s))
+            print('EDITED STORAGE:\t{}'.format(s))
+        else:
+            bot.send_message(int(cid), 'Type /game to start the game')
 
 def main():
     pass
