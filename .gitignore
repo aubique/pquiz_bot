@@ -6,4 +6,4 @@ env/
 venv/
 
 # History / Temporary files
-db_shelve.db
+*test.db

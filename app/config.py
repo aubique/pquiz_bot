@@ -1,9 +1,27 @@
 # -*- coding: utf-8 -*-
-TOKEN1 = '827727867'
-TOKEN2 = 'AAEQfCqT2F0JtuPcyqXUz83KmmIXUeGdlHc'
-WEBHOOK = 'https://api.telegram.org/bot827727867:AAEQfCqT2F0JtuPcyqXUz83KmmIXUeGdlHc/setWebhook?url='
-SHELVE_FILE = '../db/db_shelve'
-JSON_QUIZ = '../db/db_quiz.json'
+# Telebot
+TOKEN1 = '892470673'
+TOKEN2 = 'AAESUTIzTEh-n9Ui7vfqCfGtt_HYj8dLNsg'
+
+# <Controller/View>
 RIGHT = "Good one!"
-WRONG = "That's not right. Try it again later."
+WRONG = "That's not right. Try another one"
 CONGRATS = "You've got all of the answers right. Congrats!"
+WELCOME = "Type /game or /next to start the game"
+
+# <data.py>
+HISTORY_DBPATH = "../db/history_test.db"
+QUESTIONS_DBPATH = "../db/questions_test.db"
+HISTORY_TABLE = "history"
+QUESTIONS_TABLE = "questions"
+INTEGER = "integer"
+TEXT = "text"
+# User History DB
+USER_ID = "user_id"
+QUESTION_ID = "question_id"
+# Questions DB
+QUESTION = "question"
+CORRECT = "correct"
+ANSWER1 = "answer1"
+ANSWER2 = "answer2"
+ANSWER3 = "answer3"

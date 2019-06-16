@@ -1,74 +1,89 @@
-#/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # File: bot.py
-# Quiz game
+# Quiz game: Telegram (Controller/View)
 
-import requests
 import telebot
 from telebot import types
-from flask import Flask, request
+from flask import Flask, request, abort
 from flask_sslify import SSLify
-import config, core
+import core
+import config
 
-bot = telebot.TeleBot('{}:{}'.format(config.TOKEN1, config.TOKEN2))
+bot = telebot.TeleBot("{}:{}".format(config.TOKEN1, config.TOKEN2))
 app = Flask(__name__)
 sslify = SSLify(app)
+sessions_dict = {}
 
-@app.route('/', methods=['POST', 'GET'])
+
+def generate_markup(session: core.Session) -> dict:
+    """Generate keyboard markup to show question and answers"""
+    answers = types.ReplyKeyboardMarkup(
+        resize_keyboard=True, one_time_keyboard=True
+    )
+    answers.add(*session.ticket.answers)
+    return {
+        "chat_id": session.uid,
+        "text": session.ticket.question,
+        "reply_markup": answers,
+    }
+
+
+@app.route("/", methods=["POST", "GET"])
 def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
+    """Update on GET/POST requests"""
+    if request.headers.get("content-type") == "application/json":
+        json_string = request.get_data().decode("utf-8")
         update = types.Update.de_json(json_string)
         bot.process_new_updates([update])
-        return ''
+        return ""
     else:
-        flask.abort(403)
+        abort(403)
 
-@bot.message_handler(commands=['game', 'next'])
-def show_question(message:types.Message):
-    cid = str(message.chat.id)
-    quiz = core.load_json(config.JSON_QUIZ)
-    # Add a var to the storage in case if it's not initialized
-    #storage = core.shelve_callback(cid, core.update_history, str(0))
-    # Pick a random number which isn't listed in the message history yet
-    random_num = core.shelve_callback(cid, core.choose_question, quiz)
-    # If we ran of the questions then there is no random number so we indicitate the end
-    print('Returned random number:\t'+str(random_num))
-    if random_num is None:
-        bot.send_message(int(cid), config.CONGRATS)
+
+@bot.message_handler(commands=["game", "next"])
+def show_question(message: types.Message):
+    """Controller to start the game session"""
+    uid = message.chat.id
+    # TODO: Singleton __new__() wrapper to check instances by uid
+    s = core.Session(uid)
+    # Session start main method
+    s.start()
+    # If there are no more questions to ask
+    if s.game_over:
+        bot.send_message(uid, config.CONGRATS)
         return None
-    # Question, correct answer, ticket of answers
-    q, ca, t = core.get_ticket_data(quiz, random_num)
-    # Enable game mode
-    s = core.shelve_callback(cid, core.set_user_game, random_num, ca)
-    # Generate markup of the mixed answers
-    markup = core.generate_markup(t)
-    bot.send_message(int(cid), q, reply_markup=markup)
+    # Send message with generated keyboard
+    bot.send_message(**generate_markup(s))
+    # Use UserID as key for the dictionary added to global sessions list
+    sessions_dict.update({uid: s})
 
-@bot.message_handler(commands=['start'])
-def update_history(message: types.Message):
-    pass
 
-@bot.message_handler(func=lambda messsage: True, content_types=['text'])
+@bot.message_handler(func=lambda messsage: True, content_types=["text"])
 def get_reply(message: types.Message):
-    cid = str(message.chat.id)
-    num, ca = core.shelve_callback(cid, core.get_correct)
-    # Correct answer exists if game is started and initialized it early
-    if ca:
-        keyboard_hider = types.ReplyKeyboardRemove()
-        # If text is right/wrong hide the keyboard and output a message
-        if message.text == ca:
-            bot.reply_to(message, config.RIGHT, reply_markup=keyboard_hider)
-            core.shelve_callback(cid, core.update_history, str(num))
-        else:
-            bot.reply_to(message, config.WRONG, reply_markup=keyboard_hider)
-        # Finish the game and delete the correct answer shelve
-        core.shelve_callback(cid, core.finish_user_game)
+    """Controller to finish the game session"""
+    uid = message.chat.id
+    s = sessions_dict.pop(uid, None)
+    # If there a session existing in the global list
+    if not s:
+        bot.send_message(uid, config.WELCOME)
+        return None
+    s.finish(message.text)
+    # If the given response is correct
+    if s.is_matched:
+        bot.reply_to(
+            message,
+            config.RIGHT,
+            reply_markup=types.ReplyKeyboardRemove(),
+        )
     else:
-        bot.send_message(int(cid), 'Type /game to start the game')
+        sessions_dict.update({uid: s})
+        bot.reply_to(
+            message,
+            config.WRONG,
+            reply_markup=types.ReplyKeyboardRemove(),
+        )
 
-def main():
-    pass
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run()
