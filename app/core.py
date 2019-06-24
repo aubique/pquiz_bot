@@ -6,12 +6,26 @@
 import data
 from random import shuffle, randint
 
+<<<<<<< HEAD
+=======
+QST_INDEX = 0
+LAST_INDEX = 4
+
+def get_hid(user_id):
+    """
+    Get an ID for shelve of the history message
+    :param user_id: User ID to convert
+    :return: (str) Converted UID for history message
+    """
+    return user_id + 'hist'
+>>>>>>> 5db9be8685e1375afddd48ec79dd5a473ef9bc99
 
 class Ticket(object):
     """
     Class containing information of single question instance
     """
 
+<<<<<<< HEAD
     def __init__(self, database: data.QuestionsDB):
         self.questions_db = database
         self.question_id: int = None
@@ -20,6 +34,22 @@ class Ticket(object):
         self.answers: list = None
         self.correct_answer_pos: int = None
         self.is_matched: bool = False
+=======
+def get_eid(user_id):
+    """
+    """
+    return user_id + 'edit'
+
+def load_json(filename=config.JSON_QUIZ):
+    """
+    Open file and deserialize content to a python object
+    JSON-array = Python-list, according to the conversion table
+    :param func: prefix describing a function of the open file
+    :return: (list) List of dictionaries
+    """
+    with open(filename, 'r') as f:
+        return json.load(f)
+>>>>>>> 5db9be8685e1375afddd48ec79dd5a473ef9bc99
 
     def load(self, question_id: int):
         """
@@ -69,6 +99,7 @@ class Session(object):
         self.ticket.load(question_id)
         self.game_over = False
 
+<<<<<<< HEAD
     def choose_question(self):
         """
         Choose a question ID to propose it as the next question
@@ -121,3 +152,91 @@ class Session(object):
         """
         print("User History DB is updated!")
         self.hdb.insert_row(self.uid, self.ticket.question_id)
+=======
+def set_user_game(chat_id, storage, question_index, correct_answer):
+    """
+    Enable game mode
+    Initialize correct answer shelve
+    :param chat_id: original UserID
+    :param storage: Shelve DB
+    """
+    storage[get_cid(chat_id)] = [question_index, correct_answer]
+    print('Game Mode: Enabled')
+    return storage
+
+def finish_user_game(chat_id, storage):
+    """
+    Disable game mode
+    Delete the correct answer shelve
+    :param chat_id: original UserID
+    """
+    print('Game Mode: Disabled')
+    try:
+        del storage[get_cid(chat_id)]
+    except KeyError:
+        return None
+
+def get_correct(chat_id, storage):
+    """
+    Get a correct answer from the correct answer shelve
+    If '/game' command hasn't been sent except KeyError and return Nothing
+    :param chat_id: original UserID
+    :param storage: Shelve DB
+    """
+    cid = get_cid(chat_id)
+    try:
+        correct = storage[cid]
+        return correct
+    # In case '/game' hasn't been sent and game isn't started yet
+    except KeyError:
+        return [None, None]
+
+def generate_markup(answers):
+    """
+    Generate keyboard markup to send
+    :param answers: mixed answer list
+    :return: (telebot.types.ReplyKeyboardMarkup) Return keyboard layout of answers
+    """
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    markup.add(*answers)
+    #[markup.add(i) for i in *answers]
+    return markup
+
+def set_game_editor(chat_id, storage):
+    """
+    Initialize question editor shelve
+    Prepare it for recieving data by list.append function
+    :param chat_id: User ID
+    """
+    print('Game Mode: Editor')
+    eid = get_eid(chat_id)
+    storage[eid] = ['-1']
+    return storage
+
+def recieve_question_data(chat_id, storage, text):
+    """
+    Recieve and write to the shelve the question data
+    :param chat_id: User ID
+    :param storage: #TODO
+    :param text: #TODO
+    :return: (list) #TODO / (None)
+    """
+    eid = get_eid(chat_id)
+    storage_edit = storage[eid]
+    iteration = int(storage_edit[QST_INDEX])
+    storage_edit[QST_INDEX] = str(iteration+1)
+    storage[eid] = storage_edit + [text]
+    if iteration < LAST_INDEX:
+        return storage[eid]
+    else:
+        return None
+
+def get_question_mark(storage):
+    i = int(storage[QST_INDEX])
+    if i == 0:
+        return 'Enter the correct answer'
+    elif i < LAST_INDEX:
+        return 'Enter another answer'
+    else:
+        return 'You completed the question'
+>>>>>>> 5db9be8685e1375afddd48ec79dd5a473ef9bc99
