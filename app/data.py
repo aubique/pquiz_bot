@@ -30,7 +30,7 @@ class SQLiteCursor(object):
 
 class GenericDB(object):
     """
-    Parent database class which helps to interact with DB by dict
+    Parent database class for interaction with SQLite3 DB
     """
 
     def __init__(self, row_dict):
@@ -57,7 +57,7 @@ class GenericDB(object):
                 )
             )
 
-    def count_all_rows(self):
+    def count_all_rows(self) -> int:
         """
         Count a number of rows in the table
         :return: (int) Number of row in the whole table
@@ -68,7 +68,7 @@ class GenericDB(object):
             ).fetchall()
         return len(rows)
 
-    def select_all_rows(self):
+    def select_all_rows(self) -> int:
         """
         Select all rows in the current DB
         :return: (list) List of row-tuples
@@ -79,11 +79,12 @@ class GenericDB(object):
             ).fetchall()
         return rows
 
-    def search_rows_by_arg(self, attribute, value):
+    def search_rows_by_arg(self, attribute, value) -> list:
         """
         Find multiple rows by the given attribute
         :param attribute: Attribute of column for search
         :param value: Value for search
+        :return: (list) Row-tuples where values of attributes match
         """
         with SQLiteCursor(self._fname) as c:
             rows = c.execute(
@@ -95,12 +96,13 @@ class GenericDB(object):
 
     def search_col_by_arg(
         self, column: str, attribute: str, value: str
-    ):
+    ) -> list:
         """
         Search multiple rows of the certain column by attribute
         :param column: Column that we select for filtering
         :param attribute: Attribute of column for search
         :param value: Value for search
+        :return: (list) Row-tuples matched by value, filtered by column
         """
         values_list = list()
         with SQLiteCursor(self._fname) as c:
@@ -114,10 +116,11 @@ class GenericDB(object):
         values_list.append([values_tuple[0] for values_tuple in raws])
         return values_list[0]
 
-    def search_row_by_id(self, value):
+    def search_row_by_id(self, value) -> tuple:
         """
         Search a row by primary key ID
         :param value: Value of primary key ID
+        :return: (tuple) Row found by ID value
         """
         with SQLiteCursor(self._fname) as c:
             row = c.execute(
@@ -133,24 +136,12 @@ class GenericDB(object):
         """
 
         @staticmethod
-        def generate_create_query_nouse(table, kwargs):
-            """Generate SQL query to create a table"""
-            string = "CREATE TABLE IF NOT EXISTS %s" % table
-            string += "(id integer primary key"
-            for k, v in kwargs.items():
-                if v.isdigit():
-                    v = "integer"
-                else:
-                    v = "text"
-                string += ",{} {}".format(k, v)
-            string += ")"
-            return string
-
-        def generate_create_query(table, kwargs):
+        def generate_create_query(table, kwargs) -> str:
             """
             Generate a SQL query to create table with certain args
             :param table: Name of the table
             :param kwargs: Dictionary with keys and its' types
+            :return: (str) Formatted SQL query string
             """
             string = "CREATE TABLE IF NOT EXISTS %s" % table
             string += "(id integer primary key"
@@ -161,11 +152,12 @@ class GenericDB(object):
             return string
 
         @staticmethod
-        def generate_insert_query(table: str, kwargs: dict):
+        def generate_insert_query(table: str, kwargs: dict) -> str:
             """
             Generate SQL query to insert various arguments
             :param table: Table name
             :param kwargs: Dictionary with keys and values
+            :return: (str) Formatted SQL insert query string
             """
             string1 = "INSERT INTO %s (" % table
             string2 = "VALUES ("
@@ -177,16 +169,17 @@ class GenericDB(object):
             return string1 + string2
 
         @staticmethod
-        def generate_select_all(table: str):
+        def generate_select_all(table: str) -> str:
             """
             Generate SQL query to select all rows
             :param table: Table name
+            :return: (str) Formatted SQL select query string
             """
             string = "SELECT * FROM %s" % table
             return string
 
         @staticmethod
-        def generate_select_by(table, attribute, value):
+        def generate_select_by(table, attribute, value) -> str:
             """
             Generate SQL query to select a row by the given attribute
             """
@@ -199,15 +192,19 @@ class GenericDB(object):
             """
             Generate SQL query to select certain columns of rows
             Search by the given argument and its value
+            :return: (str) Formatted SQL select query string
             """
             return "SELECT {} FROM {} WHERE {} = '{}'".format(
                 column, table, attribute, value
             )
 
         @staticmethod
-        def generate_dict(columns: tuple, values: tuple):
+        def generate_dict(columns: tuple, values: tuple) -> dict:
             """
             Generate a dictionary with columns as key and values
+            :param columns: Column names
+            :param values: Values tuple
+            :return: (dict) Dictionary of associated columns and values
             """
             return dict(zip(columns, values))
 
