@@ -217,7 +217,7 @@ class QuestionsDB(GenericDB):
     def __init__(self):
         self._fname = config.QUESTIONS_DBPATH
         self._table = config.QUESTIONS_TABLE
-        self.__columns = (
+        self.columns = (
             config.QUESTION,
             config.CORRECT,
             config.ANSWER1,
@@ -231,7 +231,7 @@ class QuestionsDB(GenericDB):
             config.TEXT,
             config.TEXT,
         )
-        row = super().Utility.generate_dict(self.__columns, values)
+        row = super().Utility.generate_dict(self.columns, values)
         super().__init__(row)
 
 
@@ -243,9 +243,9 @@ class HistoryDB(GenericDB):
     def __init__(self):
         self._fname = config.HISTORY_DBPATH
         self._table = config.HISTORY_TABLE
-        self.__columns = (config.USER_ID, config.QUESTION_ID)
+        self.columns = (config.USER_ID, config.QUESTION_ID)
         values = (config.INTEGER, config.INTEGER)
-        row = super().Utility.generate_dict(self.__columns, values)
+        row = super().Utility.generate_dict(self.columns, values)
         super().__init__(row)
 
     def search_rows_by_uid(self, user_id: int):
@@ -257,5 +257,5 @@ class HistoryDB(GenericDB):
         )
 
     def insert_row(self, *args: tuple):
-        dic = super().Utility.generate_dict(self.__columns, args)
+        dic = super().Utility.generate_dict(self.columns, args)
         return super().insert_row(dic)

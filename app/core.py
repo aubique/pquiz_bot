@@ -21,7 +21,7 @@ class Ticket(object):
         self.correct_answer_pos: int = None
         self.is_matched: bool = False
 
-    def load(self, question_id: int):
+    def load_from_db(self, question_id: int):
         """
         Load data to the Ticket object from the Questions DB
         :param question_id: Question ID in the DB
@@ -39,6 +39,15 @@ class Ticket(object):
             self.answers.index(self.correct_answer) + 1
         )
 
+    def set_properties(self, question, correct, *answers):
+        """
+        Set properties of the Ticket from the extracted tmp list
+        """
+        self.question = question
+        self.correct_answer = correct
+        self.answers = list(answers)
+        #TODO: Add trigger game_mod
+
 
 class Session(object):
     """
@@ -46,10 +55,13 @@ class Session(object):
     """
 
     def __init__(self, user_id: int):
+        self.is_game_mode_edit: bool = False
         self.hdb = data.HistoryDB()
         self.qdb = data.QuestionsDB()
         self.uid = user_id
         self.ticket = Ticket(self.qdb)
+        self.list_add = list()
+        self.iter_add = iter(self.qdb.columns)
 
     def start(self):
         """
@@ -66,7 +78,7 @@ class Session(object):
             self.game_over = True
             return None
         # Load data to Ticket-instance and access the DB by question ID
-        self.ticket.load(question_id)
+        self.ticket.load_from_db(question_id)
         self.game_over = False
 
     def __choose_question(self) -> int:
@@ -113,6 +125,21 @@ class Session(object):
         else:
             self.is_matched = False
         print("Is answer correct:\t%s" % self.is_matched)
+
+    def add_question(self, message_text: str, first: bool = False):
+        """
+        Process of iteration through the column names to create a ticket
+        Step by step add data to the list then fill Ticket object
+        :param message_text: Text recieved from the user
+        """
+        column_name = next(self.iter_add, None)
+        if not first:
+            self.list_add.append(message_text)
+            if not column_name:
+                self.ticket.set_properties(self.list_add)
+                self.is_game_mode_edit = False
+                return None
+        return column_name
 
     def __update_history(self):
         """

@@ -59,16 +59,33 @@ def show_question(message: types.Message):
     sessions_dict.update({uid: s})
 
 
-@bot.message_handler(func=lambda messsage: True, content_types=["text"])
+@bot.message_handler(commands=["add", "edit"])
 def get_reply(message: types.Message):
-    """Controller to finish the game session"""
+    """Controller to start adding a question to the DB"""
     uid = message.chat.id
     s = sessions_dict.pop(uid, None)
+    if not s:
+        s = core.Session(uid)
+        s.is_game_mode_edit = True
+    bot.send_message(uid, s.add_question(None, first=True))
+
+
+@bot.message_handler(func=lambda messsage: True, content_types=["text"])
+def get_reply(message: types.Message):
+    """Controller to handle the response typed by the user"""
+    uid = message.chat.id
+    s = sessions_dict.pop(uid, None)
+    reply = message.text
     # If there a session existing in the global list
     if not s:
         bot.send_message(uid, config.WELCOME)
         return None
-    s.finish(message.text)
+    # Game mode: edit
+    if s.is_game_mode_edit:
+        bot.send_message(uid, s.add_question(reply))
+        return None
+    # Game mode: verification
+    s.finish(reply)
     # If the given response is correct
     if s.is_matched:
         bot.reply_to(
@@ -77,12 +94,12 @@ def get_reply(message: types.Message):
             reply_markup=types.ReplyKeyboardRemove(),
         )
     else:
-        sessions_dict.update({uid: s})
         bot.reply_to(
             message,
             config.WRONG,
             reply_markup=types.ReplyKeyboardRemove(),
         )
+        sessions_dict.update({uid: s})
 
 
 if __name__ == "__main__":
