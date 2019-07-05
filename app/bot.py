@@ -60,14 +60,15 @@ def show_question(message: types.Message):
 
 
 @bot.message_handler(commands=["add", "edit"])
-def get_reply(message: types.Message):
+def new_question(message: types.Message):
     """Controller to start adding a question to the DB"""
     uid = message.chat.id
     s = sessions_dict.pop(uid, None)
     if not s:
         s = core.Session(uid)
         s.is_game_mode_edit = True
-    bot.send_message(uid, s.add_question(None, first=True))
+        sessions_dict.update({uid: s})
+    bot.send_message(uid, s.fill_question(None, first=True))
 
 
 @bot.message_handler(func=lambda messsage: True, content_types=["text"])
@@ -76,14 +77,18 @@ def get_reply(message: types.Message):
     uid = message.chat.id
     s = sessions_dict.pop(uid, None)
     reply = message.text
-    # If there a session existing in the global list
+    # If there is no session existing in the global list
     if not s:
         bot.send_message(uid, config.WELCOME)
         return None
     # Game mode: edit
     if s.is_game_mode_edit:
-        bot.send_message(uid, s.add_question(reply))
-        return None
+        msg = s.fill_question(reply)
+        # In case fill_question loop isn't over we commit back session
+        if msg:
+            bot.send_message(uid, msg)
+            return sessions_dict.update({uid: s})
+        return bot.send_message(uid, config.WELCOME)
     # Game mode: verification
     s.finish(reply)
     # If the given response is correct
@@ -93,13 +98,14 @@ def get_reply(message: types.Message):
             config.RIGHT,
             reply_markup=types.ReplyKeyboardRemove(),
         )
+        return None
     else:
         bot.reply_to(
             message,
             config.WRONG,
             reply_markup=types.ReplyKeyboardRemove(),
         )
-        sessions_dict.update({uid: s})
+        return sessions_dict.update({uid: s})
 
 
 if __name__ == "__main__":

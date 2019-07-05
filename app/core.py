@@ -39,6 +39,14 @@ class Ticket(object):
             self.answers.index(self.correct_answer) + 1
         )
 
+    def save_to_db(self):
+        """
+        Save properties of Ticket instance to the Questions DB
+        """
+        properties = (self.question, self.correct_answer, *self.answers)
+        print(properties)
+        self.questions_db.insert_row(*properties)
+
     def set_properties(self, question, correct, *answers):
         """
         Set properties of the Ticket from the extracted tmp list
@@ -46,7 +54,6 @@ class Ticket(object):
         self.question = question
         self.correct_answer = correct
         self.answers = list(answers)
-        #TODO: Add trigger game_mod
 
 
 class Session(object):
@@ -126,7 +133,7 @@ class Session(object):
             self.is_matched = False
         print("Is answer correct:\t%s" % self.is_matched)
 
-    def add_question(self, message_text: str, first: bool = False):
+    def fill_question(self, message_text: str, first: bool = False):
         """
         Process of iteration through the column names to create a ticket
         Step by step add data to the list then fill Ticket object
@@ -135,8 +142,10 @@ class Session(object):
         column_name = next(self.iter_add, None)
         if not first:
             self.list_add.append(message_text)
+            print("column_name is %s" % column_name)
             if not column_name:
-                self.ticket.set_properties(self.list_add)
+                self.ticket.set_properties(*self.list_add)
+                self.ticket.save_to_db()
                 self.is_game_mode_edit = False
                 return None
         return column_name

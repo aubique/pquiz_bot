@@ -234,6 +234,10 @@ class QuestionsDB(GenericDB):
         row = super().Utility.generate_dict(self.columns, values)
         super().__init__(row)
 
+    def insert_row(self, *args: tuple):
+        dic = super().Utility.generate_dict(self.columns, args)
+        return super().insert_row(dic)
+
 
 class HistoryDB(GenericDB):
     """

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Telebot
-TOKEN1 = '892470673'
-TOKEN2 = 'AAESUTIzTEh-n9Ui7vfqCfGtt_HYj8dLNsg'
+TOKEN1 = "892470673"
+TOKEN2 = "AAESUTIzTEh-n9Ui7vfqCfGtt_HYj8dLNsg"
 
 # <Controller/View>
 RIGHT = "Good one!"
