@@ -59,7 +59,7 @@ def show_question(message: types.Message):
     sessions_dict.update({uid: s})
 
 
-@bot.message_handler(commands=["add", "edit"])
+@bot.message_handler(commands=["add"])
 def new_question(message: types.Message):
     """Controller to start adding a question to the DB"""
     uid = message.chat.id
@@ -69,6 +69,19 @@ def new_question(message: types.Message):
         s.is_game_mode_edit = True
         sessions_dict.update({uid: s})
     bot.send_message(uid, s.fill_question(None, first=True))
+
+
+@bot.message_handler(commands=["clear"])
+def clear_history(message: types.Message):
+    """Controller to clear any questions of the current user"""
+    uid = message.chat.id
+    s = sessions_dict.pop(uid, None)
+    # If this user has yet to pass any questions
+    if not s:
+        s = core.Session(uid)
+    s.delete_user_history()
+    bot.send_message(uid, config.CLEARED)
+    bot.send_message(uid, config.WELCOME)
 
 
 @bot.message_handler(func=lambda messsage: True, content_types=["text"])

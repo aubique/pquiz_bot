@@ -94,6 +94,19 @@ class GenericDB(object):
             ).fetchall()
         return rows
 
+    def delete_rows_by_arg(self, attribute, value):
+        """
+        Delete multiple rows by the given attribute
+        :param attribute: Name of column to delete
+        :param value: Value of the column that gets deleted
+        """
+        with SQLiteCursor(self._fname) as c:
+            rows = c.execute(
+                self.Utility.generate_delete_by(
+                    self._table, attribute, value
+                )
+            )
+
     def search_col_by_arg(
         self, column: str, attribute: str, value: str
     ) -> list:
@@ -199,6 +212,15 @@ class GenericDB(object):
             )
 
         @staticmethod
+        def generate_delete_by(table, attribute, value):
+            """
+            Generate SQL query to delete rows by the given attribute
+            """
+            return "DELETE FROM {} WHERE {} = '{}'".format(
+                table, attribute, value
+            )
+
+        @staticmethod
         def generate_dict(columns: tuple, values: tuple) -> dict:
             """
             Generate a dictionary with columns as key and values
@@ -254,6 +276,9 @@ class HistoryDB(GenericDB):
 
     def search_rows_by_uid(self, user_id: int):
         return super().search_rows_by_arg(config.USER_ID, user_id)
+
+    def delete_rows_by_uid(self, user_id: int):
+        return super().delete_rows_by_arg(config.USER_ID, user_id)
 
     def search_qnum_by_uid(self, user_id: int):
         return super().search_col_by_arg(

@@ -150,10 +150,18 @@ class Session(object):
                 return None
         return column_name
 
-    def __update_history(self):
+    def __update_history(self) -> None:
         """
         Update User History DB
         Insert user ID and question ID to the database
         """
         print("User History DB is updated!")
         self.hdb.insert_row(self.uid, self.ticket.question_id)
+
+    def delete_user_history(self) -> None:
+        """
+        Clear History for this user
+        Delete any data related to the user in User History DB
+        """
+        print("User History is cleared for %s" % self.uid)
+        self.hdb.delete_rows_by_uid(self.uid)

@@ -8,6 +8,7 @@ RIGHT = "Good one!"
 WRONG = "That's not right. Try another one"
 CONGRATS = "You've got all of the answers right. Congrats!"
 WELCOME = "Type /game or /next to start the game"
+CLEARED = "Your question history is cleared. Start game from scatch."
 
 # <data.py>
 HISTORY_DBPATH = "../db/history_test.db"
