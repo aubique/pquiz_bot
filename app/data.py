@@ -45,7 +45,7 @@ class GenericDB(object):
                 )
             )
 
-    def insert_row(self, row_dict):
+    def insert_row(self, row_dict) -> None:
         """
         Execute query to insert a row into the instance table
         :param row_dict: Dictionary to query
@@ -94,20 +94,20 @@ class GenericDB(object):
             ).fetchall()
         return rows
 
-    def delete_rows_by_arg(self, attribute, value):
+    def delete_rows_by_arg(self, attribute, value) -> None:
         """
         Delete multiple rows by the given attribute
         :param attribute: Name of column to delete
         :param value: Value of the column that gets deleted
         """
         with SQLiteCursor(self._fname) as c:
-            rows = c.execute(
+            c.execute(
                 self.Utility.generate_delete_by(
                     self._table, attribute, value
                 )
             )
 
-    def search_col_by_arg(
+    def search_cols_by_arg(
         self, column: str, attribute: str, value: str
     ) -> list:
         """
@@ -120,14 +120,28 @@ class GenericDB(object):
         values_list = list()
         with SQLiteCursor(self._fname) as c:
             # We get a list of tuples filtered by column
-            raws = c.execute(
+            rows = c.execute(
                 self.Utility.generate_column_select_by(
                     self._table, column, attribute, value
                 )
             ).fetchall()
         # Extract 1st item of each tuple to the new list
-        values_list.append([values_tuple[0] for values_tuple in raws])
+        values_list.append([values_tuple[0] for values_tuple in rows])
         return values_list[0]
+
+    def search_col_by_arg(
+        self, column: str, attribute: str, value: str
+    ) -> str:
+        """
+        Find one row of the certain column by attribute
+        :param column: Column that we select for filtering
+        :param attribute: Attribute of column for search
+        :param value: Value for search
+        :return: (str) Row matched by value, filtered by column
+        """
+        rows = self.search_cols_by_arg(column, attribute, value)
+        if rows:
+            return rows[0]
 
     def search_row_by_id(self, value) -> tuple:
         """
@@ -201,7 +215,9 @@ class GenericDB(object):
             )
 
         @staticmethod
-        def generate_column_select_by(table, column, attribute, value):
+        def generate_column_select_by(
+            table, column, attribute, value
+        ) -> str:
             """
             Generate SQL query to select certain columns of rows
             Search by the given argument and its value
@@ -212,7 +228,7 @@ class GenericDB(object):
             )
 
         @staticmethod
-        def generate_delete_by(table, attribute, value):
+        def generate_delete_by(table, attribute, value) -> str:
             """
             Generate SQL query to delete rows by the given attribute
             """
@@ -247,44 +263,106 @@ class QuestionsDB(GenericDB):
             config.ANSWER3,
         )
         values = (
-            config.TEXT,
-            config.TEXT,
-            config.TEXT,
-            config.TEXT,
-            config.TEXT,
+            config.TYPE_TEXT,
+            config.TYPE_TEXT,
+            config.TYPE_TEXT,
+            config.TYPE_TEXT,
+            config.TYPE_TEXT,
         )
         row = super().Utility.generate_dict(self.columns, values)
         super().__init__(row)
 
-    def insert_row(self, *args: tuple):
+    def insert_row(self, *args: tuple) -> None:
+        """
+        Sent generated dictionary to Parent DB
+        """
         dic = super().Utility.generate_dict(self.columns, args)
         return super().insert_row(dic)
 
 
-class HistoryDB(GenericDB):
+class UserHistoryTable(GenericDB):
+    # TODO: Change name to UserHistoryTable
     """
-    Child database class to interact with User History database
+    Child database class to interact with Questions History data
+    It uses the same DB as UserInfoTable located at HISTORY_DBPATH
     """
 
     def __init__(self):
         self._fname = config.HISTORY_DBPATH
-        self._table = config.HISTORY_TABLE
+        self._table = config.USER_HISTORY_TABLE
         self.columns = (config.USER_ID, config.QUESTION_ID)
-        values = (config.INTEGER, config.INTEGER)
+        values = (config.TYPE_INTEGER, config.TYPE_INTEGER)
         row = super().Utility.generate_dict(self.columns, values)
         super().__init__(row)
 
-    def search_rows_by_uid(self, user_id: int):
+    def search_rows_by_uid(self, user_id: int) -> list:
         return super().search_rows_by_arg(config.USER_ID, user_id)
 
-    def delete_rows_by_uid(self, user_id: int):
+    def delete_rows_by_uid(self, user_id: int) -> None:
         return super().delete_rows_by_arg(config.USER_ID, user_id)
 
-    def search_qnum_by_uid(self, user_id: int):
-        return super().search_col_by_arg(
+    def search_qnum_by_uid(self, user_id: int) -> list:
+        return super().search_cols_by_arg(
             config.QUESTION_ID, config.USER_ID, user_id
         )
 
-    def insert_row(self, *args: tuple):
+    def insert_row(self, *args: tuple) -> None:
+        dic = super().Utility.generate_dict(self.columns, args)
+        return super().insert_row(dic)
+
+
+class UserInfoTable(GenericDB):
+    # TODO: Make most of the methods private
+    """
+    Child database class to interact with Language User data
+    It uses the same DB as UserHistoryTable located at HISTORY_DBPATH
+    """
+
+    def __init__(self):
+        self._fname = config.HISTORY_DBPATH
+        self._table = config.USER_LANGUAGE_TABLE
+        self.columns = (config.USER_ID, config.LANGUAGE_CODE)
+        values = (config.TYPE_INTEGER, config.TYPE_TEXT)
+        row = super().Utility.generate_dict(self.columns, values)
+        super().__init__(row)
+
+    def delete_rows_by_uid(self, user_id: int) -> None:
+        return super().delete_rows_by_arg(config.USER_ID, user_id)
+
+    def get_user_language(self, user_id: int) -> str:
+        """
+        Find a language record
+        Search language_code column for this UserID
+        :param user_id: User ID
+        :return: (str) Language code (ru/en/fr)
+        :return: (None) If list of searched columns is empty
+        """
+        return super().search_col_by_arg(
+            config.LANGUAGE_CODE, config.USER_ID, user_id
+        )
+
+    def update_user_language(self, user_id: int, language: str) -> None:
+        """
+        Update language record in UserInfoTable of History DB
+        Get a SQL queue string from static method and execute it
+        :param user_id: User ID
+        :param language: New language code meant to be written in DB
+        """
+        # TODO: Implement ldb.Utility.generate(table,set_dic,where_dic)
+        with SQLiteCursor(self._fname) as c:
+            c.execute(
+                """
+                UPDATE {}
+                SET {} = ?
+                WHERE {} = ?
+                """.format(
+                    config.USER_LANGUAGE_TABLE,
+                    config.LANGUAGE_CODE,
+                    config.USER_ID,
+                ),
+                (language, user_id),
+            )
+
+    def insert_row(self, *args: tuple) -> None:
         dic = super().Utility.generate_dict(self.columns, args)
         return super().insert_row(dic)

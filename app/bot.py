@@ -14,19 +14,22 @@ bot = telebot.TeleBot("{}:{}".format(config.TOKEN1, config.TOKEN2))
 app = Flask(__name__)
 sslify = SSLify(app)
 sessions_dict = {}
+REPEAT = False
 
 
-def generate_markup(session: core.Session) -> dict:
-    """Generate keyboard markup to show question and answers"""
-    answers = types.ReplyKeyboardMarkup(
+def generate_markup(answers):
+    """Generate and return a keyboard markup"""
+    reply_markup = types.ReplyKeyboardMarkup(
         resize_keyboard=True, one_time_keyboard=True
     )
-    answers.add(*session.ticket.answers)
-    return {
-        "chat_id": session.uid,
-        "text": session.ticket.question,
-        "reply_markup": answers,
-    }
+    reply_markup.add(*answers)
+    return reply_markup
+
+
+def get_locale(user_id) -> str:
+    """Return a proper message according the user's tongue"""
+    # TODO: Go for JSON localisation data files
+    pass
 
 
 @app.route("/", methods=["POST", "GET"])
@@ -44,17 +47,19 @@ def webhook():
 @bot.message_handler(commands=["game", "next"])
 def show_question(message: types.Message):
     """Controller to start the game session"""
-    uid = message.chat.id
-    # TODO: Singleton __new__() wrapper to check instances by uid
+    uid: str = message.chat.id
     s = core.Session(uid)
-    # Session start main method
     s.start()
     # If there are no more questions to ask
     if s.game_over:
         bot.send_message(uid, config.CONGRATS)
         return None
     # Send message with generated keyboard
-    bot.send_message(**generate_markup(s))
+    bot.send_message(
+        chat_id=s.uid,
+        text=s.ticket.question,
+        reply_markup=generate_markup(s.ticket.answers),
+    )
     # Use UserID as key for the dictionary added to global sessions list
     sessions_dict.update({uid: s})
 
@@ -62,20 +67,38 @@ def show_question(message: types.Message):
 @bot.message_handler(commands=["add"])
 def new_question(message: types.Message):
     """Controller to start adding a question to the DB"""
-    uid = message.chat.id
-    s = sessions_dict.pop(uid, None)
+    uid: str = message.chat.id
+    s: core.Session = sessions_dict.pop(uid, None)
     if not s:
         s = core.Session(uid)
         s.is_game_mode_edit = True
         sessions_dict.update({uid: s})
+    # TODO: Find out way to generate message outside of Model
     bot.send_message(uid, s.fill_question(None, first=True))
+
+
+@bot.message_handler(commands=["language"])
+def change_language(message: types.Message):
+    """Controller to change the bot language"""
+    uid: str = message.chat.id
+    s: core.Session = sessions_dict.pop(uid, None)
+    if not s:
+        s = core.Session(uid)
+    # Set Language change game mode even though REPEATing is allowed
+    s.is_game_mode_lang = True
+    sessions_dict.update({uid: s})
+    bot.send_message(
+        chat_id=s.uid,
+        text=config.ASK_LANGUAGE_MSG,
+        reply_markup=generate_markup((config.ENGLISH, config.RUSSIAN)),
+    )
 
 
 @bot.message_handler(commands=["clear"])
 def clear_history(message: types.Message):
     """Controller to clear any questions of the current user"""
-    uid = message.chat.id
-    s = sessions_dict.pop(uid, None)
+    uid: str = message.chat.id
+    s: core.Session = sessions_dict.pop(uid, None)
     # If this user has yet to pass any questions
     if not s:
         s = core.Session(uid)
@@ -87,14 +110,19 @@ def clear_history(message: types.Message):
 @bot.message_handler(func=lambda messsage: True, content_types=["text"])
 def get_reply(message: types.Message):
     """Controller to handle the response typed by the user"""
-    uid = message.chat.id
-    s = sessions_dict.pop(uid, None)
+    uid: str = message.chat.id
+    s: core.Session = sessions_dict.pop(uid, None)
     reply = message.text
     # If there is no session existing in the global list
     if not s:
         bot.send_message(uid, config.WELCOME)
         return None
-    # Game mode: edit
+    # Game mode - Language change
+    if s.is_game_mode_lang:
+        # TODO: Verify the reply by linking possible answers in dict
+        s.update_language(reply)
+        return bot.send_message(uid, config.LANGUAGE_CHANGED_MSG)
+    # Game mode - Adding question
     if s.is_game_mode_edit:
         msg = s.fill_question(reply)
         # In case fill_question loop isn't over we commit back session
@@ -118,7 +146,10 @@ def get_reply(message: types.Message):
             config.WRONG,
             reply_markup=types.ReplyKeyboardRemove(),
         )
-        return sessions_dict.update({uid: s})
+        # If you can keep answering the same question
+        if REPEAT:
+            return sessions_dict.update({uid: s})
+        return None
 
 
 if __name__ == "__main__":

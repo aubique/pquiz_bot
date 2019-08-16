@@ -4,6 +4,7 @@
 # Quiz Bot: Game core (Model)
 
 import data
+from config import ENGLISH as DEFAULT_LANGUAGE
 from random import shuffle, randint
 
 
@@ -23,8 +24,8 @@ class Ticket(object):
 
     def load_from_db(self, question_id: int):
         """
-        Load data to the Ticket object from the Questions DB
-        :param question_id: Question ID in the DB
+        Load data to the Ticket object from the Questions
+        :param question_id: Question ID in the
         """
         row: tuple = self.questions_db.search_row_by_id(question_id)
         # row = (id, question, correct_answer, *answers)
@@ -41,7 +42,7 @@ class Ticket(object):
 
     def save_to_db(self):
         """
-        Save properties of Ticket instance to the Questions DB
+        Save properties of Ticket instance to the Questions
         """
         properties = (self.question, self.correct_answer, *self.answers)
         print(properties)
@@ -63,12 +64,16 @@ class Session(object):
 
     def __init__(self, user_id: int):
         self.is_game_mode_edit: bool = False
-        self.hdb = data.HistoryDB()
+        self.is_game_mode_lang: bool = False
+        self.ldb = data.UserInfoTable()
+        self.hdb = data.UserHistoryTable()
         self.qdb = data.QuestionsDB()
         self.uid = user_id
         self.ticket = Ticket(self.qdb)
         self.list_add = list()
         self.iter_add = iter(self.qdb.columns)
+        self.language: str = None
+        self.load_language()
 
     def start(self):
         """
@@ -84,15 +89,15 @@ class Session(object):
             # Set the variable that the game is finished for this user
             self.game_over = True
             return None
-        # Load data to Ticket-instance and access the DB by question ID
+        # Load data to Ticket-instance and access the  by question ID
         self.ticket.load_from_db(question_id)
         self.game_over = False
 
     def __choose_question(self) -> int:
         """
         Choose a question ID to propose it as the next question
-        Get a random number, verify if it's not listed yet in History DB
-        :return: (int) Question ID for further interaction with DB
+        Get a random number, verify if it's not listed yet in History
+        :return: (int) Question ID for further interaction with
         :return: (None) Quit if history length >= questions length
         """
         self.__history: list = self.hdb.search_qnum_by_uid(self.uid)
@@ -121,7 +126,7 @@ class Session(object):
         """
         print("Finish as:\t\t%s" % self.uid)
         print(
-            "Corrent answer position:\t%s"
+            "Current answer position:%s"
             % self.ticket.correct_answer_pos
         )
         if (message_text == self.ticket.correct_answer) or (
@@ -152,16 +157,36 @@ class Session(object):
 
     def __update_history(self) -> None:
         """
-        Update User History DB
-        Insert user ID and question ID to the database
+        Update User History
+        Insert UserID and QuestionID to UserHistoryTable
         """
-        print("User History DB is updated!")
+        print("User History  is updated!")
         self.hdb.insert_row(self.uid, self.ticket.question_id)
 
     def delete_user_history(self) -> None:
         """
         Clear History for this user
-        Delete any data related to the user in User History DB
+        Delete any data related to the user in User History
         """
         print("User History is cleared for %s" % self.uid)
         self.hdb.delete_rows_by_uid(self.uid)
+
+    def load_language(self) -> None:
+        """
+        Set language from UserInfoTable
+        If no language record then pick the default and write it to DB
+        """
+        self.language: str = self.ldb.get_user_language(self.uid)
+        if not self.language:
+            self.language = DEFAULT_LANGUAGE
+            self.ldb.insert_row(self.uid, self.language)
+        print("Language:\t\t%s" % self.language)
+
+    def update_language(self, new_language: str) -> None:
+        """
+        Set language from user's reply
+        Update DB with new language for this user
+        """
+        self.language = new_language
+        self.ldb.update_user_language(self.uid, self.language)
+        print("New language:\t\t%s" % self.language)
