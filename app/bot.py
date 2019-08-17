@@ -11,7 +11,9 @@ from json import load
 import core
 import config
 
-bot = telebot.TeleBot("{}:{}".format(config.TOKEN1, config.TOKEN2))
+bot = telebot.TeleBot(
+    "{}:{}".format(config.TOKEN1, config.TOKEN2, threaded=False)
+)
 app = Flask(__name__)
 sslify = SSLify(app)
 sessions_dict = {}
@@ -128,7 +130,7 @@ def get_reply(message: types.Message):
             uid, get_locale(s.language, config.WELCOME_MSG)
         )
         return None
-    # Game mode - Language change
+    # Game mode - Language switching
     if s.is_game_mode_lang:
         # TODO: Verify the reply by linking possible answers in dict
         s.update_language(reply)
@@ -140,12 +142,15 @@ def get_reply(message: types.Message):
         msg = s.fill_question(reply)
         # In case fill_question loop isn't over we commit back session
         if msg:
-            bot.send_message(uid, msg)
+            bot.send_message(
+                uid,
+                get_locale(s.language, msg)
+            )
             return sessions_dict.update({uid: s})
         return bot.send_message(
             uid, get_locale(s.language, config.WELCOME_MSG)
         )
-    # Game mode: verification
+    # Game mode - Verification of replied asnwer
     s.finish(reply)
     # If the given response is correct
     if s.is_matched:

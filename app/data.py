@@ -45,7 +45,7 @@ class GenericDB(object):
                 )
             )
 
-    def insert_row(self, row_dict) -> None:
+    def insert_row(self, row_dict: dict) -> None:
         """
         Execute query to insert a row into the instance table
         :param row_dict: Dictionary to query
@@ -94,7 +94,7 @@ class GenericDB(object):
             ).fetchall()
         return rows
 
-    def delete_rows_by_arg(self, attribute, value) -> None:
+    def delete_rows_by_arg(self, attribute: str, value: str) -> None:
         """
         Delete multiple rows by the given attribute
         :param attribute: Name of column to delete
@@ -156,6 +156,22 @@ class GenericDB(object):
                 )
             ).fetchone()
         return row
+
+    def update_row_by_arg(
+        self, row_dict: dict, attribute: str, value: str) -> None:
+        """
+        Execute query to update a row by argument and its value
+        :param row_dict: Dictionary of columns to set/update
+        :param attribute: Column name for condition
+        :param value: Value of column for condition
+        """
+        with SQLiteCursor(self._fname) as c:
+            c.execute(
+                self.Utility.generate_update_query(
+                    self._table, row_dict, attribute, value
+                )
+            )
+
 
     class Utility:
         """
@@ -237,6 +253,26 @@ class GenericDB(object):
             )
 
         @staticmethod
+        def generate_update_query(
+            table: str, kwargs: dict, attribute: str, value: str) -> str:
+            """
+            Generate SQL query to update row by attribute
+            Stetement: UPDATE table SET column=value WHERE condition
+            :param table:
+            :param kwargs:
+            :param attribute:
+            :param value:
+            :return: (str) Formatted SQL update query string
+            """
+            string = "UPDATE %s SET" % table
+            string += ",".join(
+                [" {} = '{}'".format(k, t) for k, t in kwargs.items()]
+            )
+            string += " WHERE {} = {}".format(attribute, value)
+            print(string)
+            return string
+
+        @staticmethod
         def generate_dict(columns: tuple, values: tuple) -> dict:
             """
             Generate a dictionary with columns as key and values
@@ -281,7 +317,6 @@ class QuestionsDB(GenericDB):
 
 
 class UserHistoryTable(GenericDB):
-    # TODO: Change name to UserHistoryTable
     """
     Child database class to interact with Questions History data
     It uses the same DB as UserInfoTable located at HISTORY_DBPATH
@@ -312,7 +347,6 @@ class UserHistoryTable(GenericDB):
 
 
 class UserInfoTable(GenericDB):
-    # TODO: Make most of the methods private
     """
     Child database class to interact with Language User data
     It uses the same DB as UserHistoryTable located at HISTORY_DBPATH
@@ -348,20 +382,9 @@ class UserInfoTable(GenericDB):
         :param user_id: User ID
         :param language: New language code meant to be written in DB
         """
-        # TODO: Implement ldb.Utility.generate(table,set_dic,where_dic)
-        with SQLiteCursor(self._fname) as c:
-            c.execute(
-                """
-                UPDATE {}
-                SET {} = ?
-                WHERE {} = ?
-                """.format(
-                    config.USER_LANGUAGE_TABLE,
-                    config.LANGUAGE_CODE,
-                    config.USER_ID,
-                ),
-                (language, user_id),
-            )
+        return super().update_row_by_arg(
+            {config.LANGUAGE_CODE: language}, config.USER_ID, user_id
+        )
 
     def insert_row(self, *args: tuple) -> None:
         dic = super().Utility.generate_dict(self.columns, args)
