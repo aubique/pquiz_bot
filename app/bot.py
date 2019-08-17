@@ -7,6 +7,7 @@ import telebot
 from telebot import types
 from flask import Flask, request, abort
 from flask_sslify import SSLify
+from json import load
 import core
 import config
 
@@ -26,10 +27,14 @@ def generate_markup(answers):
     return reply_markup
 
 
-def get_locale(user_id) -> str:
-    """Return a proper message according the user's tongue"""
-    # TODO: Go for JSON localisation data files
-    pass
+def get_locale(language: str, message: str) -> str:
+    """Return the message according the user's tongue"""
+    print("Localisation language:\t%s" % language)
+    print("Message code:\t\t%s" % message)
+    with open(config.LOCALE_PATH, "r") as file:
+        msg = load(file)[language][message]
+        print("Returned message:\t%s" % msg)
+        return msg
 
 
 @app.route("/", methods=["POST", "GET"])
@@ -52,7 +57,9 @@ def show_question(message: types.Message):
     s.start()
     # If there are no more questions to ask
     if s.game_over:
-        bot.send_message(uid, config.CONGRATS)
+        bot.send_message(
+            uid, get_locale(s.language, config.CONGRATS_MSG)
+        )
         return None
     # Send message with generated keyboard
     bot.send_message(
@@ -74,7 +81,9 @@ def new_question(message: types.Message):
         s.is_game_mode_edit = True
         sessions_dict.update({uid: s})
     # TODO: Find out way to generate message outside of Model
-    bot.send_message(uid, s.fill_question(None, first=True))
+    bot.send_message(
+        uid, get_locale(s.language, s.fill_question(None, first=True))
+    )
 
 
 @bot.message_handler(commands=["language"])
@@ -89,7 +98,7 @@ def change_language(message: types.Message):
     sessions_dict.update({uid: s})
     bot.send_message(
         chat_id=s.uid,
-        text=config.ASK_LANGUAGE_MSG,
+        text=get_locale(s.language, config.ASK_LANGUAGE_MSG),
         reply_markup=generate_markup((config.ENGLISH, config.RUSSIAN)),
     )
 
@@ -103,8 +112,7 @@ def clear_history(message: types.Message):
     if not s:
         s = core.Session(uid)
     s.delete_user_history()
-    bot.send_message(uid, config.CLEARED)
-    bot.send_message(uid, config.WELCOME)
+    bot.send_message(uid, get_locale(s.language, config.CLEARED_MSG))
 
 
 @bot.message_handler(func=lambda messsage: True, content_types=["text"])
@@ -115,13 +123,18 @@ def get_reply(message: types.Message):
     reply = message.text
     # If there is no session existing in the global list
     if not s:
-        bot.send_message(uid, config.WELCOME)
+        s = core.Session(uid)
+        bot.send_message(
+            uid, get_locale(s.language, config.WELCOME_MSG)
+        )
         return None
     # Game mode - Language change
     if s.is_game_mode_lang:
         # TODO: Verify the reply by linking possible answers in dict
         s.update_language(reply)
-        return bot.send_message(uid, config.LANGUAGE_CHANGED_MSG)
+        return bot.send_message(
+            uid, get_locale(s.language, config.LANGUAGE_CHANGED_MSG)
+        )
     # Game mode - Adding question
     if s.is_game_mode_edit:
         msg = s.fill_question(reply)
@@ -129,21 +142,23 @@ def get_reply(message: types.Message):
         if msg:
             bot.send_message(uid, msg)
             return sessions_dict.update({uid: s})
-        return bot.send_message(uid, config.WELCOME)
+        return bot.send_message(
+            uid, get_locale(s.language, config.WELCOME_MSG)
+        )
     # Game mode: verification
     s.finish(reply)
     # If the given response is correct
     if s.is_matched:
         bot.reply_to(
-            message,
-            config.RIGHT,
+            message=message,
+            text=get_locale(s.language, config.RIGHT_MSG),
             reply_markup=types.ReplyKeyboardRemove(),
         )
         return None
     else:
         bot.reply_to(
-            message,
-            config.WRONG,
+            message=message,
+            text=get_locale(s.language, config.WRONG_MSG),
             reply_markup=types.ReplyKeyboardRemove(),
         )
         # If you can keep answering the same question

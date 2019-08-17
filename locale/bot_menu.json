@@ -1,0 +1,30 @@
+{
+  "en": {
+    "welcome": "Type /game or /next to start the game",
+    "right": "Right answer, keep it up!",
+    "wrong": "That was close but not correct. Wanna try another question?",
+    "congrats": "Well done! You've got all the questions right. Type /clear to start the game from scratch",
+    "cleared": "Questions history is cleared. Start it over with /game or /next",
+    "ask_language": "What language would you prefer?",
+    "language_changed": "You've changed the bot language.",
+    "question": "Enter the question you'd like to add to the questions base",
+    "correct": "Enter the correct answer of your question",
+    "answer1": "Type the second answer which isn't not correct",
+    "answer2": "Write here another answer variant",
+    "answer3": "Type the fourth one"
+  },
+  "ru": {
+    "welcome": "Введите /game или /next для того, чтобы начать игру.",
+    "right": "Правильный ответ!",
+    "wrong": "Ответ неверный. Попробуй другой вопрос.",
+    "congrats": "Поздравляю! Ты ответил на все вопросы правильно. Чтобы обнулить историю введи /clear",
+    "cleared": "Теперь ты можешь попробовать всё заново. Введи /game или /next для начала",
+    "ask_language": "Выбери подходящий язык:",
+    "language_changed": "Язык был успешно изменён",
+    "question": "Введи вопрос, который ты хочешь добавить",
+    "correct": "Запиши правильный ответ на этот вопрос",
+    "answer1": "Введи второй вариант ответа (неправильный)",
+    "answer2": "Ещё один неправильный вариант ответа",
+    "answer3": "Последний вариант ответа"
+  }
+}
