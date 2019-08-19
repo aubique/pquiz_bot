@@ -12,12 +12,13 @@ import core
 import config
 
 bot = telebot.TeleBot(
-    "{}:{}".format(config.TOKEN1, config.TOKEN2, threaded=False)
+    ":".join([config.TOKEN1, config.TOKEN2]), threaded=False
 )
 app = Flask(__name__)
 sslify = SSLify(app)
 sessions_dict = {}
 REPEAT = False
+LANGUAGES = (config.ENGLISH, config.RUSSIAN)
 
 
 def generate_markup(answers):
@@ -33,7 +34,9 @@ def get_locale(language: str, message: str) -> str:
     """Return the message according the user's tongue"""
     print("Localisation language:\t%s" % language)
     print("Message code:\t\t%s" % message)
-    with open(config.LOCALE_PATH, "r") as file:
+    with open(
+        core.Session.get_abspath(config.LOCALE_PATH), "r"
+    ) as file:
         msg = load(file)[language][message]
         print("Returned message:\t%s" % msg)
         return msg
@@ -101,7 +104,7 @@ def change_language(message: types.Message):
     bot.send_message(
         chat_id=s.uid,
         text=get_locale(s.language, config.ASK_LANGUAGE_MSG),
-        reply_markup=generate_markup((config.ENGLISH, config.RUSSIAN)),
+        reply_markup=generate_markup(LANGUAGES),
     )
 
 
@@ -142,10 +145,7 @@ def get_reply(message: types.Message):
         msg = s.fill_question(reply)
         # In case fill_question loop isn't over we commit back session
         if msg:
-            bot.send_message(
-                uid,
-                get_locale(s.language, msg)
-            )
+            bot.send_message(uid, get_locale(s.language, msg))
             return sessions_dict.update({uid: s})
         return bot.send_message(
             uid, get_locale(s.language, config.WELCOME_MSG)
@@ -166,7 +166,7 @@ def get_reply(message: types.Message):
             text=get_locale(s.language, config.WRONG_MSG),
             reply_markup=types.ReplyKeyboardRemove(),
         )
-        # If you can keep answering the same question
+        # If it's allowed to try answering the same question
         if REPEAT:
             return sessions_dict.update({uid: s})
         return None

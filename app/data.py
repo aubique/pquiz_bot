@@ -158,7 +158,8 @@ class GenericDB(object):
         return row
 
     def update_row_by_arg(
-        self, row_dict: dict, attribute: str, value: str) -> None:
+        self, row_dict: dict, attribute: str, value: str
+    ) -> None:
         """
         Execute query to update a row by argument and its value
         :param row_dict: Dictionary of columns to set/update
@@ -171,7 +172,6 @@ class GenericDB(object):
                     self._table, row_dict, attribute, value
                 )
             )
-
 
     class Utility:
         """
@@ -254,7 +254,8 @@ class GenericDB(object):
 
         @staticmethod
         def generate_update_query(
-            table: str, kwargs: dict, attribute: str, value: str) -> str:
+            table: str, kwargs: dict, attribute: str, value: str
+        ) -> str:
             """
             Generate SQL query to update row by attribute
             Stetement: UPDATE table SET column=value WHERE condition
@@ -288,8 +289,8 @@ class QuestionsDB(GenericDB):
     Child database class to interact with Questions database
     """
 
-    def __init__(self):
-        self._fname = config.QUESTIONS_DBPATH
+    def __init__(self, filepath_db):
+        self._fname = filepath_db
         self._table = config.QUESTIONS_TABLE
         self.columns = (
             config.QUESTION,
@@ -322,8 +323,8 @@ class UserHistoryTable(GenericDB):
     It uses the same DB as UserInfoTable located at HISTORY_DBPATH
     """
 
-    def __init__(self):
-        self._fname = config.HISTORY_DBPATH
+    def __init__(self, filepath_db):
+        self._fname = filepath_db
         self._table = config.USER_HISTORY_TABLE
         self.columns = (config.USER_ID, config.QUESTION_ID)
         values = (config.TYPE_INTEGER, config.TYPE_INTEGER)
@@ -352,8 +353,8 @@ class UserInfoTable(GenericDB):
     It uses the same DB as UserHistoryTable located at HISTORY_DBPATH
     """
 
-    def __init__(self):
-        self._fname = config.HISTORY_DBPATH
+    def __init__(self, filepath_db):
+        self._fname = filepath_db
         self._table = config.USER_LANGUAGE_TABLE
         self.columns = (config.USER_ID, config.LANGUAGE_CODE)
         values = (config.TYPE_INTEGER, config.TYPE_TEXT)

@@ -5,5 +5,5 @@ __pycache__/
 env/
 venv/
 
-# History / Temporary files
-*test.db
+# Database SQLite3 files
+db/

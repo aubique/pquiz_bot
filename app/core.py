@@ -4,8 +4,11 @@
 # Quiz Bot: Game core (Model)
 
 import data
+from config import HISTORY_DBPATH
+from config import QUESTIONS_DBPATH
 from config import ENGLISH as DEFAULT_LANGUAGE
 from random import shuffle, randint
+from os import path
 
 
 class Ticket(object):
@@ -65,9 +68,11 @@ class Session(object):
     def __init__(self, user_id: int):
         self.is_game_mode_edit: bool = False
         self.is_game_mode_lang: bool = False
-        self.ldb = data.UserInfoTable()
-        self.hdb = data.UserHistoryTable()
-        self.qdb = data.QuestionsDB()
+        self.ldb = data.UserInfoTable(self.get_abspath(HISTORY_DBPATH))
+        self.hdb = data.UserHistoryTable(
+            self.get_abspath(HISTORY_DBPATH)
+        )
+        self.qdb = data.QuestionsDB(self.get_abspath(QUESTIONS_DBPATH))
         self.uid = user_id
         self.ticket = Ticket(self.qdb)
         self.list_add = list()
@@ -160,7 +165,7 @@ class Session(object):
         Update User History
         Insert UserID and QuestionID to UserHistoryTable
         """
-        print("User History  is updated!")
+        print("User History is updated!")
         self.hdb.insert_row(self.uid, self.ticket.question_id)
 
     def delete_user_history(self) -> None:
@@ -190,3 +195,12 @@ class Session(object):
         self.language = new_language
         self.ldb.update_user_language(self.uid, self.language)
         print("New language:\t\t%s" % self.language)
+
+    @staticmethod
+    def get_abspath(filename: str) -> str:
+        """
+        Return an absolute path of the file
+        :param file: Filepath from config.py
+        :return: (str) Converted string with absolute directory path
+        """
+        return path.abspath(path.join(path.dirname(__file__), filename))
