@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Telebot
-TOKEN1 = "827727867"
-TOKEN2 = "AAFmD7IAN7vVJeh2gUA94q_gXt-12XwocUw"
+TOKEN1 = "892470673"
+TOKEN2 = "AAF2uvUZVugr9qwWhXTCIrxWaEyOdHqSWQ0"
 # Localisation <quiz_bot/locale/bot_menu.json>
 RIGHT_MSG = "right"
 WRONG_MSG = "wrong"

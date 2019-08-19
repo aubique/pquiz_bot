@@ -1,7 +1,8 @@
 # Byte-compiled / Environments
 __pycache__/
-.env
-.venv
+virtualenv/
+.env/
+.venv/
 env/
 venv/
 
