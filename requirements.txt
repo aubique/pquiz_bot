@@ -5,7 +5,7 @@ Flask==1.1.1
 Flask-SSLify==0.1.5
 idna==2.8
 itsdangerous==1.1.0
-Jinja2==2.10.1
+Jinja2==2.11.3
 MarkupSafe==1.1.1
 pyTelegramBotAPI==3.6.6
 requests==2.22.0
